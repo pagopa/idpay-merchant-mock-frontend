@@ -1,0 +1,199 @@
+openapi: 3.0.1
+info:
+  title: IDPAY QR-CODE PAYMENT ACQUIRER API
+  description: IDPAY QR-CODE PAYMENT ACQUIRER
+  version: '1.0'
+servers:
+  - url: http://api.dev.cstar.pagopa.it/idpay/payment/qr-code/merchant
+  - url: http://apim.internal.dev.cstar.pagopa.it/idpay/payment/qr-code/merchant
+  - url: https://api.dev.cstar.pagopa.it/idpay/payment/qr-code/merchant
+  - url: https://apim.internal.dev.cstar.pagopa.it/idpay/payment/qr-code/merchant
+paths:
+  '/{transactionId}/confirm':
+    put:
+      tags:
+        - payment
+      summary: Merchant confirms the payment and the event is notified to IDPay
+      description: Merchant confirms the payment and the event is notified to IDPay
+      operationId: confirmPaymentQRCode
+      parameters:
+        - name: transactionId
+          in: path
+          description: Transaction ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+              example:
+                id: string
+                trxCode: string
+                initiativeId: string
+                senderCode: string
+                merchantId: string
+                idTrxIssuer: string
+                idTrxAcquire: string
+                trxDate: string
+                amountCents: 0
+                amountCurrency: string
+                mcc: string
+                acquirerCode: string
+                acquirerId: string
+                status: CREATED
+        '400':
+          description: Transaction is not AUTHORIZED
+        '403':
+          description: Merchant not allowed to operate on this transaction
+        '404':
+          description: Transaction does not exist
+        '429':
+          description: Too many Request
+        '500':
+          description: Server ERROR
+  /:
+    post:
+      tags:
+        - payment
+      summary: Merchant create transaction
+      description: Merchant create transaction
+      operationId: createTransaction
+      requestBody:
+        description: General information about Transaction
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionCreationRequest'
+            example:
+              initiativeId: string
+              senderCode: string
+              merchantFiscalCode: string
+              vat: string
+              idTrxIssuer: string
+              idTrxAcquire: string
+              trxDate: string
+              amountCents: 0
+              amountCurrency: string
+              mcc: string
+              acquirerCode: string
+              acquirerId: string
+              callbackUrl: string
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+              example:
+                id: string
+                trxCode: string
+                initiativeId: string
+                senderCode: string
+                merchantId: string
+                idTrxIssuer: string
+                idTrxAcquire: string
+                trxDate: string
+                amountCents: 0
+                amountCurrency: string
+                mcc: string
+                acquirerCode: string
+                acquirerId: string
+                status: CREATED
+        '404':
+          description: Transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDTO'
+              example:
+                severity: string
+                title: string
+                message: string
+components:
+  schemas:
+    TransactionCreationRequest:
+      type: object
+      properties:
+        initiativeId:
+          type: string
+        senderCode:
+          type: string
+        merchantFiscalCode:
+          type: string
+        vat:
+          type: string
+        idTrxIssuer:
+          type: string
+        idTrxAcquire:
+          type: string
+        trxDate:
+          type: string
+          format: date-time
+        amountCents:
+          type: integer
+          format: int64
+        amountCurrency:
+          type: string
+        mcc:
+          type: string
+        acquirerCode:
+          type: string
+        acquirerId:
+          type: string
+        callbackUrl:
+          type: string
+    TransactionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        trxCode:
+          type: string
+        initiativeId:
+          type: string
+        senderCode:
+          type: string
+        merchantId:
+          type: string
+        idTrxIssuer:
+          type: string
+        idTrxAcquire:
+          type: string
+        trxDate:
+          type: string
+          format: date-time
+        amountCents:
+          type: integer
+          format: int64
+        amountCurrency:
+          type: string
+        mcc:
+          type: string
+        acquirerCode:
+          type: string
+        acquirerId:
+          type: string
+        status:
+          enum:
+            - CREATED
+            - IDENTIFIED
+            - AUTHORIZED
+            - REJECTED
+          type: string
+    ErrorDTO:
+      type: object
+      properties:
+        title:
+          type: string
+        message:
+          type: string
+  securitySchemes: {}
+security: []
+tags:
+  - name: payment
+    description: ''
