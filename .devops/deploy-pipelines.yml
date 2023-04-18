@@ -30,7 +30,7 @@ variables:
 
     react_app_url_cdn: '$(UAT_REACT_APP_URL_CDN)'
 
-    react_app_url_api_payment_qr_code: '$(UAT_REACT_APP_URL_API_PAYMENT_QR_CODE)'
+    react_app_url_api_payment_qr_code: 'https://api-io.uat.cstar.pagopa.it/idpay/payment/qr-code/mock/merchant'
 
   ${{ elseif eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
     environment: 'PROD'
@@ -56,7 +56,7 @@ variables:
 
     react_app_url_cdn: '$(DEV_REACT_APP_URL_CDN)'
 
-    react_app_url_api_payment_qr_code: '$(DEV_REACT_APP_URL_API_PAYMENT_QR_CODE)'
+    react_app_url_api_payment_qr_code: 'https://api-io.dev.cstar.pagopa.it/idpay/payment/qr-code/mock/merchant'
 
 # Automatically triggered on PR
 # https://docs.microsoft.com/en-us/azure/devops/pipelines/yaml-schema?view=azure-devops&tabs=schema%2Cparameter-schema#pr-trigger
@@ -85,7 +85,6 @@ pool:
   vmImage: '$(vmImageNameDefault)'
 
 stages:
-
   # Prepare Artifact with application bundle
   - stage: Prepare_artifact
     condition: or(eq(variables['environment'], 'DEV'), succeeded())
@@ -105,7 +104,7 @@ stages:
               REACT_APP_ENV: '$(environment)'
 
               REACT_APP_URL_API_PAYMENT_QR_CODE: '$(react_app_url_api_payment_qr_code)'
-              
+
           - bash: |
               printf "$EXECUTION_ID\n$(git name-rev --name-only FETCH_HEAD) $(git rev-parse HEAD)" > $(System.DefaultWorkingDirectory)/build/build.info
             env:
