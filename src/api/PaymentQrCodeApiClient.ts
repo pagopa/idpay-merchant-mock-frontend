@@ -37,8 +37,11 @@ const onRedirectToLogin = () =>
   );
 
 export const PaymentQrCodeApi = {
-  createTransaction: async (trx: TransactionCreationRequest): Promise<TransactionResponse> => {
-    const result = await apiClient.createTransaction({ body: trx });
+  createTransaction: async (
+    merchantId: string,
+    trx: TransactionCreationRequest
+  ): Promise<TransactionResponse> => {
+    const result = await apiClient.createTransaction({ 'x-merchant-id': merchantId, body: trx });
     return extractResponse(result, 201, onRedirectToLogin);
   },
 };

@@ -1,14 +1,69 @@
 openapi: 3.0.1
 info:
-  title: IDPAY QR-CODE PAYMENT ACQUIRER API
-  description: IDPAY QR-CODE PAYMENT ACQUIRER
+  title: IDPAY QR-CODE PAYMENT MOCK MERCHANT API
+  description: IDPAY QR-CODE PAYMENT MOCK MERCHANT
   version: '1.0'
 servers:
-  - url: http://api.dev.cstar.pagopa.it/idpay/payment/qr-code/merchant
-  - url: http://apim.internal.dev.cstar.pagopa.it/idpay/payment/qr-code/merchant
-  - url: https://api.dev.cstar.pagopa.it/idpay/payment/qr-code/merchant
-  - url: https://apim.internal.dev.cstar.pagopa.it/idpay/payment/qr-code/merchant
+  - url: http://api.dev.cstar.pagopa.it/idpay/payment/qr-code/mock/merchant
+  - url: http://apim.internal.dev.cstar.pagopa.it/idpay/payment/qr-code/mock/merchant
+  - url: https://api.dev.cstar.pagopa.it/idpay/payment/qr-code/mock/merchant
+  - url: https://apim.internal.dev.cstar.pagopa.it/idpay/payment/qr-code/mock/merchant
 paths:
+  /:
+    post:
+      tags:
+        - payment
+      summary: Merchant create transaction
+      description: Merchant create transaction
+      operationId: createTransaction
+      parameters:
+        - name: x-merchant-id
+          in: header
+          description: Merchant ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: General information about Transaction
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionCreationRequest'
+            example:
+              merchantFiscalCode: string
+              vat: string
+              idTrxIssuer: string
+              initiativeId: string
+              trxDate: string
+              amountCents: 0
+              mcc: string
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+              example:
+                id: string
+                trxCode: string
+                initiativeId: string
+                merchantId: string
+                idTrxIssuer: string
+                trxDate: string
+                amountCents: 0
+                mcc: string
+                acquirerId: string
+                status: CREATED
+        '404':
+          description: Transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDTO'
+              example:
+                title: string
+                message: string
   '/{transactionId}/confirm':
     put:
       tags:
@@ -23,6 +78,12 @@ paths:
           required: true
           schema:
             type: string
+        - name: x-merchant-id
+          in: header
+          description: Merchant ID
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: Ok
@@ -34,15 +95,11 @@ paths:
                 id: string
                 trxCode: string
                 initiativeId: string
-                senderCode: string
                 merchantId: string
                 idTrxIssuer: string
-                idTrxAcquire: string
                 trxDate: string
                 amountCents: 0
-                amountCurrency: string
                 mcc: string
-                acquirerCode: string
                 acquirerId: string
                 status: CREATED
         '400':
@@ -55,81 +112,66 @@ paths:
           description: Too many Request
         '500':
           description: Server ERROR
-  /:
-    post:
+  '/status/{transactionId}':
+    get:
       tags:
         - payment
-      summary: Merchant create transaction
-      description: Merchant create transaction
-      operationId: createTransaction
-      requestBody:
-        description: General information about Transaction
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TransactionCreationRequest'
-            example:
-              initiativeId: string
-              senderCode: string
-              merchantFiscalCode: string
-              vat: string
-              idTrxIssuer: string
-              idTrxAcquire: string
-              trxDate: string
-              amountCents: 0
-              amountCurrency: string
-              mcc: string
-              acquirerCode: string
-              acquirerId: string
-              callbackUrl: string
+      summary: Returns the detail of a transaction
+      description: Returns the detail of a transaction
+      operationId: getTransaction
+      parameters:
+        - name: transactionId
+          in: path
+          description: The initiative ID
+          required: true
+          schema:
+            type: string
+        - name: x-merchant-id
+          in: header
+          description: Merchant ID
+          required: true
+          schema:
+            type: string
       responses:
-        '201':
-          description: Created
+        '200':
+          description: Ok
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TransactionResponse'
+                $ref: '#/components/schemas/SyncTrxStatus'
               example:
                 id: string
-                trxCode: string
-                initiativeId: string
-                senderCode: string
-                merchantId: string
                 idTrxIssuer: string
-                idTrxAcquire: string
+                trxCode: string
                 trxDate: string
+                authDate: string
+                operationType: CHARGE
                 amountCents: 0
                 amountCurrency: string
                 mcc: string
-                acquirerCode: string
                 acquirerId: string
+                merchantId: string
+                initiativeId: string
+                rewardCents: 0
+                rejectionReasons:
+                  - string
                 status: CREATED
+        '403':
+          description: Transaction is associated to another user
         '404':
-          description: Transaction not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDTO'
-              example:
-                severity: string
-                title: string
-                message: string
+          description: Transaction does not exist
 components:
   schemas:
     TransactionCreationRequest:
       type: object
       properties:
-        initiativeId:
-          type: string
-        senderCode:
-          type: string
         merchantFiscalCode:
           type: string
         vat:
           type: string
         idTrxIssuer:
           type: string
-        idTrxAcquire:
+        initiativeId:
           type: string
         trxDate:
           type: string
@@ -137,15 +179,7 @@ components:
         amountCents:
           type: integer
           format: int64
-        amountCurrency:
-          type: string
         mcc:
-          type: string
-        acquirerCode:
-          type: string
-        acquirerId:
-          type: string
-        callbackUrl:
           type: string
     TransactionResponse:
       type: object
@@ -156,13 +190,9 @@ components:
           type: string
         initiativeId:
           type: string
-        senderCode:
-          type: string
         merchantId:
           type: string
         idTrxIssuer:
-          type: string
-        idTrxAcquire:
           type: string
         trxDate:
           type: string
@@ -170,14 +200,58 @@ components:
         amountCents:
           type: integer
           format: int64
+        mcc:
+          type: string
+        acquirerId:
+          type: string
+        status:
+          enum:
+            - CREATED
+            - IDENTIFIED
+            - AUTHORIZED
+            - REJECTED
+          type: string
+    SyncTrxStatus:
+      type: object
+      properties:
+        id:
+          type: string
+        idTrxIssuer:
+          type: string
+        trxCode:
+          type: string
+        trxDate:
+          type: string
+          format: date-time
+        authDate:
+          type: string
+          format: date-time
+        operationType:
+          enum:
+            - CHARGE
+            - REFUND
+          type: string
+        amountCents:
+          type: integer
+          format: int64
         amountCurrency:
           type: string
         mcc:
           type: string
-        acquirerCode:
-          type: string
         acquirerId:
           type: string
+        merchantId:
+          type: string
+        initiativeId:
+          type: string
+        rewardCents:
+          type: integer
+          format: int64
+        rejectionReasons:
+          type: array
+          items:
+            type: string
+          description: The list of rejection reasons
         status:
           enum:
             - CREATED
@@ -192,8 +266,6 @@ components:
           type: string
         message:
           type: string
-  securitySchemes: {}
-security: []
 tags:
   - name: payment
     description: ''
