@@ -1,11 +1,11 @@
 import { Box, Button, Paper, Typography } from '@mui/material';
 import { TitleBox } from '@pagopa/selfcare-common-frontend';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { TransactionCreationRequest } from '../../api/generated/payment-qr-code/TransactionCreationRequest';
 import MerchantDataForm from '../../components/MerchantDataForm';
 import TransactionDataForm from '../../components/TransactionDataForm';
-import { createTransaction } from '../../services/PaymentQrCodeApiService';
+import { createTransaction, getTransaction } from '../../services/PaymentQrCodeApiService';
 import { TransactionResponse } from '../../api/generated/payment-qr-code/TransactionResponse';
 
 const initiatlState = {
@@ -21,7 +21,7 @@ const Home = () => {
   const [formData, setFormData] = useState<TransactionCreationRequest>(initiatlState);
   const [idMerchant, setIdMerchant] = useState<string>('MERCHANTID');
   const [createTrxResponse, setCreateTrxResponse] = useState<TransactionResponse>();
-
+  const [statusTrx, setStatusTrx] = useState<string>();
 
   const handleFormChange = (e: any) => {
     const name = e.target.name;
@@ -46,6 +46,23 @@ const Home = () => {
       .then((res: any) => setCreateTrxResponse(res))
       .catch((err) => console.log('err', err));
   };
+
+  useEffect(() => {
+    if (createTrxResponse && createTrxResponse.idTrxIssuer) {
+      const interval = setInterval(() => {
+        getTransaction(idMerchant, createTrxResponse.idTrxIssuer)
+          .then((res) => {
+            // console.log('res', res);
+            setStatusTrx(res?.status);
+          })
+          .catch((_err) => clearInterval(interval));
+      }, 1000);
+
+      if (statusTrx === 'EXPECTED STATUS') {
+        return clearInterval(interval);
+      }
+    }
+  }, [JSON.stringify(createTrxResponse), statusTrx]);
 
   return (
     <>
@@ -114,6 +131,7 @@ const Home = () => {
             </Typography>
           </Paper>
         ) : null}
+
         <Paper sx={{ padding: '16px', my: 2 }} data-testid="content">
           TODO
         </Paper>
