@@ -7,6 +7,7 @@ import { ENV } from '../utils/env';
 import { createClient, WithDefaultsT } from './generated/payment-qr-code/client';
 import { TransactionCreationRequest } from './generated/payment-qr-code/TransactionCreationRequest';
 import { TransactionResponse } from './generated/payment-qr-code/TransactionResponse';
+import { SyncTrxStatus } from './generated/payment-qr-code/SyncTrxStatus';
 
 const withBearer: WithDefaultsT<any> = (wrappedOperation) => (params: any) => {
   const token = storageTokenOps.read();
@@ -42,6 +43,14 @@ export const PaymentQrCodeApi = {
     trx: TransactionCreationRequest
   ): Promise<TransactionResponse> => {
     const result = await apiClient.createTransaction({ 'x-merchant-id': merchantId, body: trx });
+    return extractResponse(result, 201, onRedirectToLogin);
+  },
+
+  getTransaction: async (
+    merchantId: string,
+    transactionId: string
+  ): Promise<SyncTrxStatus> => {
+    const result = await apiClient.getTransaction({ 'x-merchant-id': merchantId, transactionId });
     return extractResponse(result, 201, onRedirectToLogin);
   },
 };
