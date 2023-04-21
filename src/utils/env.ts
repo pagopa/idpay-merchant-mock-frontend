@@ -8,12 +8,21 @@ export const ENV = {
   URL_API: {
     PAYMENT: {
       QRCODE: env.get('REACT_APP_URL_API_PAYMENT_QR_CODE').required().asString(),
-    }
+    },
   },
 
   API_TIMEOUT_MS: {
     PAYMENT: {
       QRCODE: env.get('REACT_APP_API_PAYMENT_QR_CODE_TIMEOUT_MS').required().asInt(),
-    }
+    },
+  },
+
+  PAYMENTS: {
+    QRCODE: {
+      DEFAULT_INITIATIVE_ID: env
+        .get('REACT_APP_QRCODE_DEFAULT_INITIATIVE_ID')
+        .required()
+        .asString(),
+    },
   },
 };

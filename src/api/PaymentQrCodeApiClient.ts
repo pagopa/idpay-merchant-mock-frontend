@@ -46,11 +46,19 @@ export const PaymentQrCodeApi = {
     return extractResponse(result, 201, onRedirectToLogin);
   },
 
-  getTransaction: async (
-    merchantId: string,
-    transactionId: string
-  ): Promise<SyncTrxStatus> => {
+  getTransaction: async (merchantId: string, transactionId: string): Promise<SyncTrxStatus> => {
     const result = await apiClient.getTransaction({ 'x-merchant-id': merchantId, transactionId });
     return extractResponse(result, 201, onRedirectToLogin);
+  },
+
+  confirmPaymentQRCode: async (
+    merchantId: string,
+    transactionId: string
+  ): Promise<TransactionResponse> => {
+    const result = await apiClient.confirmPaymentQRCode({
+      'x-merchant-id': merchantId,
+      transactionId,
+    });
+    return extractResponse(result, 200, onRedirectToLogin);
   },
 };

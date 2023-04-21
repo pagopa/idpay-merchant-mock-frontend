@@ -1,27 +1,75 @@
 import { Box, Button, Paper, Typography } from '@mui/material';
 import { TitleBox } from '@pagopa/selfcare-common-frontend';
-import { useState, useEffect } from 'react';
+import useErrorDispatcher from '@pagopa/selfcare-common-frontend/hooks/useErrorDispatcher';
+import useLoading from '@pagopa/selfcare-common-frontend/hooks/useLoading';
 import { QRCodeSVG } from 'qrcode.react';
+import { useEffect, useState } from 'react';
+import { StatusEnum } from '../../api/generated/payment-qr-code/SyncTrxStatus';
 import { TransactionCreationRequest } from '../../api/generated/payment-qr-code/TransactionCreationRequest';
-import MerchantDataForm from '../../components/MerchantDataForm';
-import TransactionDataForm from '../../components/TransactionDataForm';
-import { createTransaction, getTransaction } from '../../services/PaymentQrCodeApiService';
 import { TransactionResponse } from '../../api/generated/payment-qr-code/TransactionResponse';
+import {
+  confirmPaymentQRCode,
+  createTransaction,
+  getTransaction,
+} from '../../services/PaymentQrCodeApiService';
+import { ENV } from '../../utils/env';
+import MerchantDataForm from './components/MerchantDataForm';
+import TransactionDataForm from './components/TransactionDataForm';
 
-const initiatlState = {
+const initialState = {
   amountCents: 0,
   idTrxIssuer: new Date().getTime().toString(),
-  initiativeId: '63d26bbc0e71e44bb08de293',
+  initiativeId: ENV.PAYMENTS.QRCODE.DEFAULT_INITIATIVE_ID,
   mcc: '6012',
   merchantFiscalCode: 'MERCHANT_FISCAL_CODE',
   trxDate: new Date(),
   vat: 'VAT',
 };
-const Home = () => {
-  const [formData, setFormData] = useState<TransactionCreationRequest>(initiatlState);
+const QrCode = () => {
+  const [formData, setFormData] = useState<TransactionCreationRequest>(initialState);
   const [idMerchant, setIdMerchant] = useState<string>('MERCHANTID');
   const [createTrxResponse, setCreateTrxResponse] = useState<TransactionResponse>();
-  const [statusTrx, setStatusTrx] = useState<string>();
+  const [statusTrx, setStatusTrx] = useState<StatusEnum>();
+  const [intervalPolling, setIntervalPolling] = useState<NodeJS.Timer>();
+  const [trxTimeStamp, setTrxTimestamp] = useState<Date | undefined>();
+  const addError = useErrorDispatcher();
+  const setLoading = useLoading('POST_CREATE_TRANSACTION');
+
+  useEffect(() => {
+    if (createTrxResponse && createTrxResponse.id) {
+      clearInterval(intervalPolling);
+
+      setIntervalPolling(
+        setInterval(() => {
+          getTransaction(idMerchant, createTrxResponse.id)
+            .then((res) => {
+              setStatusTrx(res.status);
+              setTrxTimestamp(new Date());
+            })
+            .catch((error) => {
+              addError({
+                id: 'GET_TRANSACTION_ERROR',
+                blocking: false,
+                error,
+                techDescription: 'An error occurred geting the transaction',
+                displayableTitle: 'Si è verificato un errore',
+                displayableDescription:
+                  'Qualcosa e andato male durante il recupero dello stato della transazione',
+                toNotify: true,
+                component: 'Toast',
+                showCloseIcon: true,
+              });
+            });
+        }, 5000)
+      );
+    }
+  }, [createTrxResponse]);
+
+  useEffect(() => {
+    if (statusTrx === StatusEnum.AUTHORIZED || statusTrx === StatusEnum.REJECTED) {
+      clearInterval(intervalPolling);
+    }
+  }, [statusTrx]);
 
   const handleFormChange = (e: any) => {
     const name = e.target.name;
@@ -30,48 +78,78 @@ const Home = () => {
   };
 
   const handleSubmit = (_event?: any) => {
-    console.log('formData handleSUbmit', formData);
     postCreateTransaction();
   };
 
   const handleReset = () => {
-    setFormData(initiatlState);
+    setFormData(initialState);
+    setIdMerchant('MERCHANTID');
+    setCreateTrxResponse(undefined);
+    setStatusTrx(StatusEnum.REJECTED);
+    setTrxTimestamp(undefined);
   };
 
   const postCreateTransaction = () => {
+    setStatusTrx(StatusEnum.REJECTED);
+    setCreateTrxResponse(undefined);
+
+    setLoading(true);
     createTransaction(idMerchant, {
       ...formData,
       trxDate: new Date(formData.trxDate),
     })
-      .then((res: any) => setCreateTrxResponse(res))
-      .catch((err) => console.log('err', err));
+      .then((res) => setCreateTrxResponse(res))
+      .catch((error) => {
+        addError({
+          id: 'POST_CREATE_TRANSACTION_ERROR',
+          blocking: false,
+          error,
+          techDescription: 'An error occurred creating the transaction',
+          displayableTitle: 'Si è verificato un errore',
+          displayableDescription: 'Qualcosa e andato storto durante la creazione della transazione',
+          toNotify: true,
+          component: 'Toast',
+          showCloseIcon: true,
+        });
+      })
+      .finally(() => setLoading(false));
   };
 
-  useEffect(() => {
-    if (createTrxResponse && createTrxResponse.idTrxIssuer) {
-      const interval = setInterval(() => {
-        getTransaction(idMerchant, createTrxResponse.idTrxIssuer)
-          .then((res) => {
-            // console.log('res', res);
-            setStatusTrx(res?.status);
-          })
-          .catch((_err) => clearInterval(interval));
-      }, 1000);
-
-      if (statusTrx === 'EXPECTED STATUS') {
-        return clearInterval(interval);
-      }
+  const putConfirmPaymentQRCode = () => {
+    setLoading(true);
+    if (createTrxResponse && createTrxResponse.id) {
+      confirmPaymentQRCode(idMerchant, createTrxResponse.id)
+        .then((res) => {
+          setStatusTrx(res.status);
+          setTrxTimestamp(new Date());
+        })
+        .catch((error) => {
+          addError({
+            id: 'PUT_CONFIRM_TRANSACTION_ERROR',
+            blocking: false,
+            error,
+            techDescription: 'An error occurred confirming the transaction',
+            displayableTitle: 'Si è verificato un errore',
+            displayableDescription: 'Qualcosa e andato storto durante la conferma del pagamento',
+            toNotify: true,
+            component: 'Toast',
+            showCloseIcon: true,
+          });
+        })
+        .finally(() => setLoading(false));
     }
-  }, [JSON.stringify(createTrxResponse), statusTrx]);
-
+  };
   return (
     <>
       <Box
         sx={{
           display: 'grid',
-          rowGap: 2,
-          pb: 2,
+          gap: 3,
           px: 2,
+          maxWidth: '1280px',
+          mt: 0,
+          ml: 'auto',
+          mr: 'auto',
         }}
       >
         <TitleBox
@@ -86,7 +164,7 @@ const Home = () => {
         />
         <MerchantDataForm
           formData={formData}
-          handlechange={handleFormChange}
+          handlechange={(e) => handleFormChange(e)}
           idMerchant={idMerchant}
           setIdMerchant={setIdMerchant}
         />
@@ -95,49 +173,91 @@ const Home = () => {
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(12)',
-          justifyContent: 'end',
-          gap: 1,
-          pb: 2,
-          px: 2,
+          gridTemplateColumns: 'repeat(12, 1fr)',
+          gap: 2,
+          maxWidth: '1280px',
+          mt: 1,
+          mr: 'auto',
+          ml: 'auto',
         }}
       >
-        <Box sx={{ gridColumn: '8' }} />
-        <Button sx={{ mr: '2' }} onClick={handleReset}>
+        <Box sx={{ gridColumn: 'span 8' }} />
+        <Button sx={{ gridColumn: 'span 2' }} onClick={handleReset}>
           Ripristina
         </Button>
-        <Button type="submit" variant="contained" onClick={handleSubmit}>
+        <Button
+          sx={{ gridColumn: 'span 2', width: 'max-content' }}
+          type="submit"
+          variant="contained"
+          onClick={handleSubmit}
+        >
           Crea transazione
         </Button>
       </Box>
-      <Box
-        sx={{
-          display: 'grid',
-          rowGap: 2,
-          pb: 2,
-          px: 2,
-        }}
-      >
-        {createTrxResponse && createTrxResponse.trxCode ? (
-          <Paper sx={{ padding: '16px', my: 2, display: 'grid' }} data-testid="content">
-            <Typography variant="h6" sx={{ gridColumn: 'span 12', mb: 2, justifySelf: 'center' }}>
-              {'Codice transazione'}
-            </Typography>
-            <Box sx={{ gridColumn: 'span 6', mb: 2, justifySelf: 'center' }}>
+
+      {createTrxResponse && createTrxResponse.trxCode ? (
+        <Paper
+          sx={{
+            display: 'grid',
+            padding: '16px',
+            my: 2,
+            gridTemplateColumns: 'repeat(12, 1fr)',
+            maxWidth: '1280px',
+            ml: 'auto',
+            mr: 'auto',
+          }}
+        >
+          <Box
+            sx={{ gridColumn: 'span 6', display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)' }}
+          >
+            <Box sx={{ gridColumn: ' span 6' }}>
               <QRCodeSVG value={createTrxResponse?.trxCode} size={150} />
             </Box>
-            <Typography variant="h6" sx={{ gridColumn: 'span 6', mb: 2, justifySelf: 'center' }}>
-              {createTrxResponse?.trxCode}
-            </Typography>
-          </Paper>
-        ) : null}
-
-        <Paper sx={{ padding: '16px', my: 2 }} data-testid="content">
-          TODO
+            <Box>
+              <Typography variant="h6">{'Codice transazione'}</Typography>
+              <Typography variant="body1">{createTrxResponse?.trxCode}</Typography>
+            </Box>
+          </Box>
+          {statusTrx ? (
+            <Box
+              sx={{ gridColumn: 'span 6', display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)' }}
+            >
+              <Typography variant="h6" sx={{ gridColumn: 'span 12', mb: 2 }}>
+                {'Stato transazione'}
+              </Typography>
+              <Box sx={{ gridColumn: 'span 6' }}>
+                <Typography variant="body1">{'Timestamp'}</Typography>
+                {trxTimeStamp?.toISOString()}
+              </Box>
+              <Box sx={{ gridColumn: 'span 6' }}>
+                <Typography variant="body1">{'Stato'}</Typography>
+                {statusTrx}
+              </Box>
+              <Box
+                sx={{
+                  gridColumn: 'span 10',
+                }}
+              ></Box>
+              <Box
+                sx={{
+                  gridColumn: 'span 2',
+                }}
+              >
+                <Button
+                  disabled={statusTrx !== StatusEnum.AUTHORIZED}
+                  type="submit"
+                  variant="contained"
+                  onClick={putConfirmPaymentQRCode}
+                >
+                  Conferma
+                </Button>
+              </Box>
+            </Box>
+          ) : null}
         </Paper>
-      </Box>
+      ) : null}
     </>
   );
 };
 
-export default Home;
+export default QrCode;

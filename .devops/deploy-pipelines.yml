@@ -32,6 +32,8 @@ variables:
 
     react_app_url_api_payment_qr_code: 'https://api-io.uat.cstar.pagopa.it/idpay/payment/qr-code/mock/merchant'
 
+    react_app_qrcode_default_initiative_id: 'INIATIVEID' # TODO to create and set here
+
   ${{ elseif eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
     environment: 'PROD'
     azure_subscription: $(PROD_AZURE_SUBSCRIPTION)
@@ -43,6 +45,8 @@ variables:
     react_app_url_cdn: '$(PROD_REACT_APP_URL_CDN)'
 
     react_app_url_api_payment_qr_code: '$(PROD_REACT_APP_URL_API_PAYMENT_QR_CODE)'
+
+    react_app_qrcode_default_initiative_id: ''
 
   # every branch different from past will be considered as DEV
   #  ${{ if startsWith(variables['Build.SourceBranch'], 'refs/heads/release-dev') }}:
@@ -57,6 +61,8 @@ variables:
     react_app_url_cdn: '$(DEV_REACT_APP_URL_CDN)'
 
     react_app_url_api_payment_qr_code: 'https://api-io.dev.cstar.pagopa.it/idpay/payment/qr-code/mock/merchant'
+
+    react_app_qrcode_default_initiative_id: '63d26bbc0e71e44bb08de293'
 
 # Automatically triggered on PR
 # https://docs.microsoft.com/en-us/azure/devops/pipelines/yaml-schema?view=azure-devops&tabs=schema%2Cparameter-schema#pr-trigger
@@ -104,6 +110,7 @@ stages:
               REACT_APP_ENV: '$(environment)'
 
               REACT_APP_URL_API_PAYMENT_QR_CODE: '$(react_app_url_api_payment_qr_code)'
+              REACT_APP_QRCODE_DEFAULT_INITIATIVE_ID: '$(react_app_qrcode_default_initiative_id)'
 
           - bash: |
               printf "$EXECUTION_ID\n$(git name-rev --name-only FETCH_HEAD) $(git rev-parse HEAD)" > $(System.DefaultWorkingDirectory)/build/build.info
