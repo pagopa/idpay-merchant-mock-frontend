@@ -118,7 +118,7 @@ paths:
         - payment
       summary: Returns the detail of a transaction
       description: Returns the detail of a transaction
-      operationId: getTransaction
+      operationId: getStatusTransaction
       parameters:
         - name: transactionId
           in: path
@@ -156,8 +156,6 @@ paths:
                 rejectionReasons:
                   - string
                 status: CREATED
-        '403':
-          description: Transaction is associated to another user
         '404':
           description: Transaction does not exist
 components:
@@ -228,6 +226,7 @@ components:
             - CREATED
             - IDENTIFIED
             - AUTHORIZED
+            - REWARDED
             - REJECTED
           type: string
     SyncTrxStatus:
@@ -236,7 +235,6 @@ components:
         - idTrxIssuer
         - trxCode
         - trxDate
-        - authDate
         - operationType
         - amountCents
         - amountCurrency
@@ -244,7 +242,6 @@ components:
         - acquirerId
         - merchantId
         - initiativeId
-        - rewardCents
         - rejectionReasons
         - status
       type: object
@@ -292,6 +289,7 @@ components:
             - CREATED
             - IDENTIFIED
             - AUTHORIZED
+            - REWARDED
             - REJECTED
           type: string
     ErrorDTO:

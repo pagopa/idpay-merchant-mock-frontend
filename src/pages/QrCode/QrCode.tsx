@@ -10,7 +10,7 @@ import { TransactionResponse } from '../../api/generated/payment-qr-code/Transac
 import {
   confirmPaymentQRCode,
   createTransaction,
-  getTransaction,
+  getStatusTransaction,
 } from '../../services/PaymentQrCodeApiService';
 import { ENV } from '../../utils/env';
 import MerchantDataForm from './components/MerchantDataForm';
@@ -41,17 +41,18 @@ const QrCode = () => {
 
       setIntervalPolling(
         setInterval(() => {
-          getTransaction(idMerchant, createTrxResponse.id)
+          getStatusTransaction(idMerchant, createTrxResponse.id)
             .then((res) => {
               setStatusTrx(res.status);
+
               setTrxTimestamp(new Date());
             })
             .catch((error) => {
               addError({
-                id: 'GET_TRANSACTION_ERROR',
+                id: 'GET_STATUS_TRANSACTION_ERROR',
                 blocking: false,
                 error,
-                techDescription: 'An error occurred geting the transaction',
+                techDescription: 'An error occurred geting the transaction status',
                 displayableTitle: 'Si è verificato un errore',
                 displayableDescription:
                   'Qualcosa e andato male durante il recupero dello stato della transazione',
@@ -60,20 +61,26 @@ const QrCode = () => {
                 showCloseIcon: true,
               });
             });
-        }, 5000)
+        }, 1000)
       );
     }
   }, [createTrxResponse]);
 
   useEffect(() => {
-    if (statusTrx === StatusEnum.AUTHORIZED || statusTrx === StatusEnum.REJECTED) {
+    if (
+      statusTrx === StatusEnum.AUTHORIZED ||
+      statusTrx === StatusEnum.REWARDED ||
+      statusTrx === StatusEnum.REJECTED
+    ) {
       clearInterval(intervalPolling);
     }
   }, [statusTrx]);
 
   const handleFormChange = (e: any) => {
     const name = e.target.name;
+
     const value = e.target.value;
+
     setFormData((values) => ({ ...values, [name]: value }));
   };
 
@@ -83,17 +90,25 @@ const QrCode = () => {
 
   const handleReset = () => {
     setFormData(initialState);
+
     setIdMerchant('MERCHANTID');
+
     setCreateTrxResponse(undefined);
-    setStatusTrx(StatusEnum.REJECTED);
+
+    setStatusTrx(undefined);
+
     setTrxTimestamp(undefined);
+
+    clearInterval(intervalPolling);
   };
 
   const postCreateTransaction = () => {
-    setStatusTrx(StatusEnum.REJECTED);
+    setStatusTrx(undefined);
+
     setCreateTrxResponse(undefined);
 
     setLoading(true);
+
     createTransaction(idMerchant, {
       ...formData,
       trxDate: new Date(formData.trxDate),
@@ -117,6 +132,7 @@ const QrCode = () => {
 
   const putConfirmPaymentQRCode = () => {
     setLoading(true);
+
     if (createTrxResponse && createTrxResponse.id) {
       confirmPaymentQRCode(idMerchant, createTrxResponse.id)
         .then((res) => {
@@ -139,12 +155,13 @@ const QrCode = () => {
         .finally(() => setLoading(false));
     }
   };
+
   return (
     <>
       <Box
         sx={{
           display: 'grid',
-          gap: 3,
+          gap: 1,
           px: 2,
           maxWidth: '1280px',
           mt: 0,

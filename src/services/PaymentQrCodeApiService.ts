@@ -8,8 +8,8 @@ export const createTransaction = (
   trx: TransactionCreationRequest
 ): Promise<TransactionResponse> => PaymentQrCodeApi.createTransaction(merchantId, trx);
 
-export const getTransaction = (merchantId: string, transactionId: string): Promise<SyncTrxStatus> =>
-  PaymentQrCodeApi.getTransaction(merchantId, transactionId);
+export const getStatusTransaction = (merchantId: string, transactionId: string): Promise<SyncTrxStatus> =>
+  PaymentQrCodeApi.getStatusTransaction(merchantId, transactionId);
 
 export const confirmPaymentQRCode = (
   merchantId: string,
