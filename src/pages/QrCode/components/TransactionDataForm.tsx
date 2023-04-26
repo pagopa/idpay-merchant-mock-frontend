@@ -20,9 +20,8 @@ const TransactionDataForm = ({ formData, handleChange }: MerchantProps) => (
           label="Id transazione"
           value={formData.idTrxIssuer}
           required
-          onChange={(e) => {
-            handleChange(e);
-          }}
+          error={!formData.idTrxIssuer}
+          onChange={handleChange}
         ></TextField>
 
         <TextField
@@ -33,7 +32,8 @@ const TransactionDataForm = ({ formData, handleChange }: MerchantProps) => (
           type="number"
           value={formData.amountCents}
           required
-          onChange={(e) => handleChange(e)}
+          error={!formData.amountCents || formData.amountCents <= 0}
+          onChange={handleChange}
         ></TextField>
 
         <TextField
@@ -43,7 +43,8 @@ const TransactionDataForm = ({ formData, handleChange }: MerchantProps) => (
           label="MCC"
           value={formData.mcc}
           required
-          onChange={(e) => handleChange(e)}
+          error={!formData.mcc}
+          onChange={handleChange}
         ></TextField>
 
         <TextField
@@ -53,6 +54,7 @@ const TransactionDataForm = ({ formData, handleChange }: MerchantProps) => (
           name="trxDate"
           type="datetime-local"
           required
+          error={!formData.trxDate}
           value={
             formData.trxDate.toISOString
               ? `${formData.trxDate

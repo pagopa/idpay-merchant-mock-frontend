@@ -204,6 +204,17 @@ const QrCode = () => {
         </Button>
         <Button
           sx={{ gridColumn: 'span 2', width: 'max-content' }}
+          disabled={
+            !idMerchant ||
+            !formData.merchantFiscalCode ||
+            !formData.vat ||
+            !formData.initiativeId ||
+            !formData.idTrxIssuer ||
+            !formData.mcc ||
+            !formData.trxDate ||
+            !formData.amountCents ||
+            formData.amountCents <= 0
+          }
           type="submit"
           variant="contained"
           onClick={handleSubmit}
@@ -242,22 +253,17 @@ const QrCode = () => {
               <Typography variant="h6" sx={{ gridColumn: 'span 12', mb: 2 }}>
                 {'Stato transazione'}
               </Typography>
-              <Box sx={{ gridColumn: 'span 6' }}>
+              <Box sx={{ gridColumn: 'span 5' }}>
                 <Typography variant="body1">{'Timestamp'}</Typography>
-                {trxTimeStamp?.toISOString()}
+                {trxTimeStamp?.toLocaleString()}
               </Box>
-              <Box sx={{ gridColumn: 'span 6' }}>
+              <Box sx={{ gridColumn: 'span 4' }}>
                 <Typography variant="body1">{'Stato'}</Typography>
                 {statusTrx}
               </Box>
               <Box
                 sx={{
-                  gridColumn: 'span 10',
-                }}
-              ></Box>
-              <Box
-                sx={{
-                  gridColumn: 'span 2',
+                  gridColumn: 'span 3',
                 }}
               >
                 <Button
