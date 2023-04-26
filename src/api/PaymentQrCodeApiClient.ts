@@ -48,7 +48,7 @@ export const PaymentQrCodeApi = {
 
   getTransaction: async (merchantId: string, transactionId: string): Promise<SyncTrxStatus> => {
     const result = await apiClient.getTransaction({ 'x-merchant-id': merchantId, transactionId });
-    return extractResponse(result, 201, onRedirectToLogin);
+    return extractResponse(result, 200, onRedirectToLogin);
   },
 
   confirmPaymentQRCode: async (

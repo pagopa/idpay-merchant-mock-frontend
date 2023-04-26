@@ -164,11 +164,11 @@ const QrCode = () => {
         />
         <MerchantDataForm
           formData={formData}
-          handlechange={(e) => handleFormChange(e)}
+          handlechange={handleFormChange}
           idMerchant={idMerchant}
           setIdMerchant={setIdMerchant}
         />
-        <TransactionDataForm formData={formData} handleChange={(e) => handleFormChange(e)} />
+        <TransactionDataForm formData={formData} handleChange={handleFormChange} />
       </Box>
       <Box
         sx={{
