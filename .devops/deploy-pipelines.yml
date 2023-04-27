@@ -1,14 +1,13 @@
-# Azure DevOps pipeline to release a new version and deploy to production.
+# Azure DevOps pipeline to release a new version and deploy to selected environment.
 
 parameters:
-  - name: 'RELEASE_SEMVER'
-    displayName: 'When packing a release, define the version bump to apply'
+  - name: 'environment'
+    displayName: 'The environment where to deploy'
     type: string
     values:
-      - major
-      - minor
-      - patch
-    default: minor
+      - DEV
+      - UAT
+    default: DEV
 
 variables:
   NODE_VERSION: '16.10.0'
@@ -20,38 +19,7 @@ variables:
 
   # global variables
 
-  ${{ if or(startsWith(variables['Build.SourceBranch'], 'refs/heads/release-uat'), startsWith(variables['Build.SourceBranch'], 'refs/heads/hotfix')) }}:
-    environment: 'UAT'
-    azure_subscription: $(UAT_AZURE_SUBSCRIPTION)
-    cdn_endpoint: '$(UAT_CDN_ENDPOINT)'
-    cdn_profile: '$(UAT_CDN_PROFILE)'
-    resource_group: '$(UAT_RESOURCE_GROUP)'
-    storage_account: '$(UAT_STORAGE_ACCOUNT)'
-
-    react_app_url_cdn: '$(UAT_REACT_APP_URL_CDN)'
-
-    react_app_url_api_payment_qr_code: 'https://api-io.uat.cstar.pagopa.it/idpay/payment/qr-code/mock/merchant'
-
-    react_app_qrcode_default_initiative_id: 'INIATIVEID' # TODO to create and set here
-
-  ${{ elseif eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
-    environment: 'PROD'
-    azure_subscription: $(PROD_AZURE_SUBSCRIPTION)
-    cdn_endpoint: '$(PROD_CDN_ENDPOINT)'
-    cdn_profile: '$(PROD_CDN_PROFILE)'
-    resource_group: '$(PROD_RESOURCE_GROUP)'
-    storage_account: '$(PROD_STORAGE_ACCOUNT)'
-
-    react_app_url_cdn: '$(PROD_REACT_APP_URL_CDN)'
-
-    react_app_url_api_payment_qr_code: '$(PROD_REACT_APP_URL_API_PAYMENT_QR_CODE)'
-
-    react_app_qrcode_default_initiative_id: ''
-
-  # every branch different from past will be considered as DEV
-  #  ${{ if startsWith(variables['Build.SourceBranch'], 'refs/heads/release-dev') }}:
-  ${{ else }}:
-    environment: 'DEV'
+  ${{ if eq(parameters.environment, 'DEV') }}:
     azure_subscription: $(DEV_AZURE_SUBSCRIPTION)
     cdn_endpoint: '$(DEV_CDN_ENDPOINT)'
     cdn_profile: '$(DEV_CDN_PROFILE)'
@@ -64,14 +32,34 @@ variables:
 
     react_app_qrcode_default_initiative_id: '63d26bbc0e71e44bb08de293'
 
-# Automatically triggered on PR
-# https://docs.microsoft.com/en-us/azure/devops/pipelines/yaml-schema?view=azure-devops&tabs=schema%2Cparameter-schema#pr-trigger
-trigger:
-  branches:
-    include:
-      - main
-      - release-*
+  ${{ elseif eq(parameters.environment, 'UAT') }}:
+    azure_subscription: $(UAT_AZURE_SUBSCRIPTION)
+    cdn_endpoint: '$(UAT_CDN_ENDPOINT)'
+    cdn_profile: '$(UAT_CDN_PROFILE)'
+    resource_group: '$(UAT_RESOURCE_GROUP)'
+    storage_account: '$(UAT_STORAGE_ACCOUNT)'
 
+    react_app_url_cdn: '$(UAT_REACT_APP_URL_CDN)'
+
+    react_app_url_api_payment_qr_code: 'https://api-io.uat.cstar.pagopa.it/idpay/payment/qr-code/mock/merchant'
+
+    react_app_qrcode_default_initiative_id: ''
+
+  ${{ elseif eq(parameters.environment, 'PROD') }}:
+    azure_subscription: $(PROD_AZURE_SUBSCRIPTION)
+    cdn_endpoint: '$(PROD_CDN_ENDPOINT)'
+    cdn_profile: '$(PROD_CDN_PROFILE)'
+    resource_group: '$(PROD_RESOURCE_GROUP)'
+    storage_account: '$(PROD_STORAGE_ACCOUNT)'
+
+    react_app_url_cdn: '$(PROD_REACT_APP_URL_CDN)'
+
+    react_app_url_api_payment_qr_code: '$(PROD_REACT_APP_URL_API_PAYMENT_QR_CODE)'
+
+    react_app_qrcode_default_initiative_id: ''
+
+# Only manual activations are intended
+trigger: none
 pr: none
 
 resources:
