@@ -81,7 +81,7 @@ pool:
 stages:
   # Prepare Artifact with application bundle
   - stage: Prepare_artifact
-    condition: or(eq(variables['environment'], 'DEV'), succeeded())
+    condition: or(eq('${{ parameters.environment }}', 'DEV'), succeeded())
     jobs:
       - job: 'make_build'
         steps:
@@ -95,7 +95,7 @@ stages:
             displayName: 'Build files'
             env:
               INLINE_RUNTIME_CHUNK: 'false'
-              REACT_APP_ENV: '$(environment)'
+              REACT_APP_ENV: '${{ parameters.environment }}'
 
               REACT_APP_URL_API_PAYMENT_QR_CODE: '$(react_app_url_api_payment_qr_code)'
               REACT_APP_QRCODE_DEFAULT_INITIATIVE_ID: '$(react_app_qrcode_default_initiative_id)'
@@ -109,10 +109,10 @@ stages:
             artifact: Bundle
 
   # Deploy bundle
-  - stage: 'Deploy_to_${{ variables.environment }}'
-    condition: or(eq(variables['environment'], 'DEV'), succeeded())
+  - stage: 'Deploy_to_${{ parameters.environment }}'
+    condition: or(eq('${{ parameters.environment }}', 'DEV'), succeeded())
     jobs:
-      - job: 'Deploy_to_${{ variables.environment }}'
+      - job: 'Deploy_to_${{ parameters.environment }}'
         steps:
           - checkout: none
 
