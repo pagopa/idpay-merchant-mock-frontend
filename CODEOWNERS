@@ -1,4 +1,3 @@
 # see https://help.github.com/en/articles/about-code-owners#example-of-a-codeowners-file
-
-# TODO fix contributors team
-* @pagopa/selfcare-contributors @antonioT90 @dariopelliccioli @OraldoDoci
+# Add the repository's code owners here
+* @pagopa/idpay-app-maintainer-team @pagopa/idpay-approver-team @dariopelliccioli
